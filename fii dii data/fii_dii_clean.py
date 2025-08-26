@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Load the data
-df = pd.read_csv("fii_dii_data.csv")
+df = pd.read_csv("fii_dii_11-17.csv")
 
 # Manually assign correct column names
 df.columns = [
@@ -33,4 +33,4 @@ df.dropna(how='all', inplace=True)
 df['Date'] = df['Date'].dt.strftime('%d-%m-%Y')
 
 # Save cleaned file
-df.to_csv("fii_dii_data_cleaned.csv", index=False)
+df.to_csv("fii_dii_data_cleaned2.csv", index=False)

@@ -1,35 +1,23 @@
 import pandas as pd
 
-# Load cleaned files
-nifty_df = pd.read_csv("nifty50_data_cleaned.csv")
-fii_dii_df = pd.read_csv("fii_dii_data_cleaned.csv")
-vix_df = pd.read_csv("vix_2017_2025_combined.csv")
+# Load the three CSV files
+vix_df = pd.read_csv("india_vix_2011_2025.csv")
+fii_dii_df = pd.read_csv("fii_dii_data_2011_2024.csv")
+historical_df = pd.read_csv("NIFTY50_2011_to_2024.csv")
 
-# Rename date column in VIX to match others
-vix_df.rename(columns={'date': 'Date'}, inplace=True)
+# Ensure 'Date' column is datetime
+vix_df["Date"] = pd.to_datetime(vix_df["Date"])
+fii_dii_df["Date"] = pd.to_datetime(fii_dii_df["Date"])
+historical_df["Date"] = pd.to_datetime(historical_df["Date"])
 
-# Convert all 'Date' columns to datetime
-nifty_df['Date'] = pd.to_datetime(nifty_df['Date'], format='%d-%m-%Y', errors='coerce')
-fii_dii_df['Date'] = pd.to_datetime(fii_dii_df['Date'], format='%d-%m-%Y', errors='coerce')
-vix_df['Date'] = pd.to_datetime(vix_df['Date'], format='%d-%m-%Y', errors='coerce')
+# Merge all three files on 'Date'
+merged_df = pd.merge(historical_df, fii_dii_df, on="Date", how="outer")
+merged_df = pd.merge(merged_df, vix_df, on="Date", how="outer")
 
-# Drop rows with invalid dates
-nifty_df.dropna(subset=['Date'], inplace=True)
-fii_dii_df.dropna(subset=['Date'], inplace=True)
-vix_df.dropna(subset=['Date'], inplace=True)
+# Sort by Date (most recent first)
+merged_df = merged_df.sort_values(by="Date", ascending=False).reset_index(drop=True)
 
-# Merge all datasets on Date using outer join to preserve all rows
-merged_df = pd.merge(nifty_df, fii_dii_df, on='Date', how='outer')
-merged_df = pd.merge(merged_df, vix_df, on='Date', how='outer')
+# Save merged file
+merged_df.to_csv("combined_data.csv", index=False)
 
-# Sort by Date descending
-merged_df.sort_values('Date', ascending=False, inplace=True)
-
-# Optional: Reset index and format date back to string if needed
-merged_df.reset_index(drop=True, inplace=True)
-merged_df['Date'] = merged_df['Date'].dt.strftime('%d-%m-%Y')
-
-# Save the combined dataset
-merged_df.to_csv("combined_nifty_fii_dii_vix.csv", index=False)
-
-print("✅ All data combined and saved as 'combined_nifty_fii_dii_vix.csv'.")
+print("✅ Combined file created: combined_data.csv (most recent dates first)")

@@ -14,8 +14,6 @@ df = pd.read_csv('/kaggle/input/combined-stock-data/combined_nifty_fii_dii_vix.c
 df.dropna(inplace=True)
 df['Date'] = pd.to_datetime(df['Date'], format='%d-%m-%Y')
 df.sort_values('Date', inplace=True)
-
-# Drop 'Index Name' if it exists
 df.drop(columns=['Index Name'], errors='ignore', inplace=True)
 
 # Select features (everything except Close and Date) and target (Close)

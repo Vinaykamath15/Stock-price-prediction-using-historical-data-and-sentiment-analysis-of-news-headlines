@@ -1,53 +1,53 @@
 import pandas as pd
-import os
-import glob
 
-# Folder where all the VIX CSV files (NSE + Yahoo) are stored
-folder_path = 'vix'  # change this to your actual folder name if different
-all_files = glob.glob(os.path.join(folder_path, "*.csv"))
+# File paths
+combined_file = r"D:\stock-price-prediction\vix (yearly)\vix_2017_2025_combined.csv"
+old_file = r"D:\stock-price-prediction\vix (yearly)\vix_2011_to_2017.csv"
 
-df_list = []
+# Load the existing combined file (2017–2025)
+df_new = pd.read_csv(combined_file)
+df_new.columns = [col.strip().lower() for col in df_new.columns]
 
-for file in all_files:
-    df = pd.read_csv(file)
-    df.columns = [col.strip().lower() for col in df.columns]
+# Ensure it only has the expected columns
+if 'close' in df_new.columns:
+    df_new = df_new[['date', 'close']].rename(columns={'close': 'vix'})
+elif 'vix' in df_new.columns:
+    df_new = df_new[['date', 'vix']]
 
-    # Normalize date column
-    if 'date' in df.columns:
-        df['date'] = pd.to_datetime(df['date'], errors='coerce')
-        df = df.dropna(subset=['date'])
-    else:
-        continue  # Skip if no Date column
+# Load the older file (2011–2017)
+df_old = pd.read_csv(old_file)
+df_old.columns = [col.strip().lower() for col in df_old.columns]
 
-    # Extract correct close value — check which column exists
-    if 'close' in df.columns:
-        df = df[['date', 'close']]
-        df.rename(columns={'close': 'vix'}, inplace=True)
-    elif 'closing value' in df.columns:
-        df = df[['date', 'closing value']]
-        df.rename(columns={'closing value': 'vix'}, inplace=True)
-    else:
-        continue  # Skip files without recognizable close column
+# Standardize structure
+if 'close' in df_old.columns:
+    df_old = df_old[['date', 'close']].rename(columns={'close': 'vix'})
+elif 'closing value' in df_old.columns:
+    df_old = df_old[['date', 'closing value']].rename(columns={'closing value': 'vix'})
+elif 'vix' in df_old.columns:
+    df_old = df_old[['date', 'vix']]
 
-    # Clean
-    df['vix'] = pd.to_numeric(df['vix'], errors='coerce')
-    df = df.dropna(subset=['vix'])
+# Convert and clean values
+df_new['date'] = pd.to_datetime(df_new['date'], errors='coerce')
+df_old['date'] = pd.to_datetime(df_old['date'], errors='coerce')
 
-    df_list.append(df)
+df_new['vix'] = pd.to_numeric(df_new['vix'], errors='coerce')
+df_old['vix'] = pd.to_numeric(df_old['vix'], errors='coerce')
 
-# Combine everything
-vix_combined = pd.concat(df_list, ignore_index=True)
+df_new = df_new.dropna(subset=['date', 'vix'])
+df_old = df_old.dropna(subset=['date', 'vix'])
 
-# Remove duplicates if any
-vix_combined.drop_duplicates(subset='date', keep='first', inplace=True)
+# Combine both datasets
+final_df = pd.concat([df_new, df_old], ignore_index=True)
 
-# Sort descending (most recent first)
-vix_combined.sort_values(by='date', ascending=False, inplace=True)
+# 🔥 Sort with most recent first
+final_df = final_df.sort_values(by='date', ascending=False).reset_index(drop=True)
 
-# Format date if needed
-vix_combined['date'] = vix_combined['date'].dt.strftime('%d-%m-%Y')
+# Format dates to dd-mm-yyyy AFTER sorting
+final_df['date'] = final_df['date'].dt.strftime('%d-%m-%Y')
 
-# Save the final combined file
-vix_combined.to_csv("vix_2017_2025_combined.csv", index=False)
+# Save result
+output_file = r"D:\stock-price-prediction\vix (yearly)\vix_2011_2025_combined.csv"
+final_df.to_csv(output_file, index=False)
 
-print("✅ Combined VIX file saved as 'vix_2017_2025_combined.csv'. Rows:", len(vix_combined))
+print(f"✅ VIX data successfully combined and saved as: {output_file}")
+print(f"   Total rows in final dataset: {len(final_df)}")
